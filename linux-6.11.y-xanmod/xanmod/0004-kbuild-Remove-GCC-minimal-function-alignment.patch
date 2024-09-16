@@ -1,0 +1,85 @@
+From 867a311f231e89b4c9194579e40718f751761ffc Mon Sep 17 00:00:00 2001
+From: Alexandre Frade <kernel@xanmod.org>
+Date: Sat, 31 Aug 2024 16:57:41 +0000
+Subject: [PATCH 04/19] kbuild: Remove GCC minimal function alignment
+
+Signed-off-by: Alexandre Frade <kernel@xanmod.org>
+---
+ Makefile                       |  7 -------
+ arch/Kconfig                   | 12 ------------
+ include/linux/compiler_types.h | 10 +++++-----
+ 3 files changed, 5 insertions(+), 24 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 882be2e96422..958ae61569cd 100644
+--- a/Makefile
++++ b/Makefile
+@@ -967,15 +967,8 @@ export CC_FLAGS_FPU
+ export CC_FLAGS_NO_FPU
+ 
+ ifneq ($(CONFIG_FUNCTION_ALIGNMENT),0)
+-# Set the minimal function alignment. Use the newer GCC option
+-# -fmin-function-alignment if it is available, or fall back to -falign-funtions.
+-# See also CONFIG_CC_HAS_SANE_FUNCTION_ALIGNMENT.
+-ifdef CONFIG_CC_HAS_MIN_FUNCTION_ALIGNMENT
+-KBUILD_CFLAGS += -fmin-function-alignment=$(CONFIG_FUNCTION_ALIGNMENT)
+-else
+ KBUILD_CFLAGS += -falign-functions=$(CONFIG_FUNCTION_ALIGNMENT)
+ endif
+-endif
+ 
+ # arch Makefile may override CC so keep this after arch Makefile is included
+ NOSTDINC_FLAGS += -nostdinc
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 975dd22a2dbd..172c70b2d23d 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -1628,18 +1628,6 @@ config FUNCTION_ALIGNMENT
+ 	default 4 if FUNCTION_ALIGNMENT_4B
+ 	default 0
+ 
+-config CC_HAS_MIN_FUNCTION_ALIGNMENT
+-	# Detect availability of the GCC option -fmin-function-alignment which
+-	# guarantees minimal alignment for all functions, unlike
+-	# -falign-functions which the compiler ignores for cold functions.
+-	def_bool $(cc-option, -fmin-function-alignment=8)
+-
+-config CC_HAS_SANE_FUNCTION_ALIGNMENT
+-	# Set if the guaranteed alignment with -fmin-function-alignment is
+-	# available or extra care is required in the kernel. Clang provides
+-	# strict alignment always, even with -falign-functions.
+-	def_bool CC_HAS_MIN_FUNCTION_ALIGNMENT || CC_IS_CLANG
+-
+ config ARCH_NEED_CMPXCHG_1_EMU
+ 	bool
+ 
+diff --git a/include/linux/compiler_types.h b/include/linux/compiler_types.h
+index f14c275950b5..e1623794ad79 100644
+--- a/include/linux/compiler_types.h
++++ b/include/linux/compiler_types.h
+@@ -99,17 +99,17 @@ static inline void __chk_io_ptr(const volatile void __iomem *ptr) { }
+  *   gcc: https://gcc.gnu.org/onlinedocs/gcc/Label-Attributes.html#index-cold-label-attribute
+  *
+  * When -falign-functions=N is in use, we must avoid the cold attribute as
+- * GCC drops the alignment for cold functions. Worse, GCC can implicitly mark
+- * callees of cold functions as cold themselves, so it's not sufficient to add
+- * __function_aligned here as that will not ensure that callees are correctly
+- * aligned.
++ * contemporary versions of GCC drop the alignment for cold functions. Worse,
++ * GCC can implicitly mark callees of cold functions as cold themselves, so
++ * it's not sufficient to add __function_aligned here as that will not ensure
++ * that callees are correctly aligned.
+  *
+  * See:
+  *
+  *   https://lore.kernel.org/lkml/Y77%2FqVgvaJidFpYt@FVFF77S0Q05N
+  *   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=88345#c9
+  */
+-#if defined(CONFIG_CC_HAS_SANE_FUNCTION_ALIGNMENT) || (CONFIG_FUNCTION_ALIGNMENT == 0)
++#if !defined(CONFIG_CC_IS_GCC) || (CONFIG_FUNCTION_ALIGNMENT == 0)
+ #define __cold				__attribute__((__cold__))
+ #else
+ #define __cold
+-- 
+2.45.2
+

@@ -1,0 +1,78 @@
+From 07341955b471371f5414f94814c49289de9319cf Mon Sep 17 00:00:00 2001
+From: Alexandre Frade <kernel@xanmod.org>
+Date: Sun, 15 Sep 2024 23:03:38 +0000
+Subject: [PATCH 06/19] XANMOD: sched: Add yield_type sysctl to reduce or
+ disable sched_yield
+
+Signed-off-by: Alexandre Frade <kernel@xanmod.org>
+---
+ kernel/sched/syscalls.c | 16 +++++++++++++++-
+ kernel/sysctl.c         | 10 ++++++++++
+ 2 files changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/sched/syscalls.c b/kernel/sched/syscalls.c
+index ae1b42775ef9..94cb1ae9ae37 100644
+--- a/kernel/sched/syscalls.c
++++ b/kernel/sched/syscalls.c
+@@ -1456,15 +1456,29 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
+ 	return ret;
+ }
+ 
++/**
++ * sysctl_sched_yield_type - choose the yield level that will perform.
++ *
++ * 0: No yield.
++ * 1: Yield only to better priority/deadline tasks.
++ * 2: Re-queue current tasks. (default CFS)
++ */
++__read_mostly int sysctl_sched_yield_type = 2;
++
+ static void do_sched_yield(void)
+ {
+ 	struct rq_flags rf;
+ 	struct rq *rq;
+ 
++	if (!sysctl_sched_yield_type)
++		return;
++
+ 	rq = this_rq_lock_irq(&rf);
+ 
+ 	schedstat_inc(rq->yld_count);
+-	current->sched_class->yield_task(rq);
++
++	if (sysctl_sched_yield_type > 1)
++		current->sched_class->yield_task(rq);
+ 
+ 	preempt_disable();
+ 	rq_unlock_irq(rq, &rf);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 79e6cb1d5c48..df29e902ac39 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -97,6 +97,7 @@ static const int six_hundred_forty_kb = 640 * 1024;
+ #endif
+ 
+ 
++extern int sysctl_sched_yield_type;
+ static const int ngroups_max = NGROUPS_MAX;
+ static const int cap_last_cap = CAP_LAST_CAP;
+ 
+@@ -1618,6 +1619,15 @@ static struct ctl_table kern_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
++	{
++		.procname	= "yield_type",
++		.data		= &sysctl_sched_yield_type,
++		.maxlen		= sizeof (int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++		.extra1		= SYSCTL_ZERO,
++		.extra2		= SYSCTL_TWO,
++	},
+ #ifdef CONFIG_PROC_SYSCTL
+ 	{
+ 		.procname	= "tainted",
+-- 
+2.45.2
+

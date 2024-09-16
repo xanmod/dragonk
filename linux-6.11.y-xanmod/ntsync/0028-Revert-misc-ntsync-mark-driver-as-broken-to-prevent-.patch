@@ -1,0 +1,28 @@
+From d3a9f8e2b4f4a325d22d0a05d6d476ea7ff69ee9 Mon Sep 17 00:00:00 2001
+From: Alexandre Frade <kernel@xanmod.org>
+Date: Mon, 15 Jul 2024 18:00:57 +0000
+Subject: [PATCH 28/28] Revert "misc: ntsync: mark driver as "broken" to
+ prevent from building"
+
+This reverts commit f5b335dc025cfee90957efa90dc72fada0d5abb4.
+
+Signed-off-by: Alexandre Frade <kernel@xanmod.org>
+---
+ drivers/misc/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 41c54051347a..bde398e12696 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -507,7 +507,6 @@ config OPEN_DICE
+ 
+ config NTSYNC
+ 	tristate "NT synchronization primitive emulation"
+-	depends on BROKEN
+ 	help
+ 	  This module provides kernel support for emulation of Windows NT
+ 	  synchronization primitives. It is not a hardware driver.
+-- 
+2.45.2
+
