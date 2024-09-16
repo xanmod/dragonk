@@ -284,7 +284,7 @@ index c62805dbd608..4955bc7f918a 100644
  		    cpumask_test_cpu(cpu, p->cpus_ptr))
  			return cpu;
  
--		if (sched_energy_enabled()) {
+-		if (!is_rd_overutilized(this_rq()->rd)) {
 -			new_cpu = find_energy_efficient_cpu(p, prev_cpu);
 -			if (new_cpu >= 0)
 -				return new_cpu;

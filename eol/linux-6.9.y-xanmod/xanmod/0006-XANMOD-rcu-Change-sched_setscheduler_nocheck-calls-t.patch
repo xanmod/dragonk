@@ -1,4 +1,4 @@
-From 3b04f748ebe97b18a6eadbd73e3da725447b1cca Mon Sep 17 00:00:00 2001
+From 6a5c6153bcf49e2589ecce7914bb06c53181c68e Mon Sep 17 00:00:00 2001
 From: Alexandre Frade <kernel@xanmod.org>
 Date: Wed, 5 Oct 2022 03:46:34 +0000
 Subject: [PATCH 06/18] XANMOD: rcu: Change sched_setscheduler_nocheck() calls
@@ -9,16 +9,16 @@ Signed-off-by: Alexandre Frade <kernel@xanmod.org>
  Documentation/admin-guide/kernel-parameters.txt | 2 +-
  kernel/rcu/Kconfig                              | 4 ++--
  kernel/rcu/rcutorture.c                         | 2 +-
- kernel/rcu/tree.c                               | 4 ++--
+ kernel/rcu/tree.c                               | 6 +++---
  kernel/rcu/tree_nocb.h                          | 4 ++--
  kernel/rcu/tree_plugin.h                        | 4 ++--
- 6 files changed, 10 insertions(+), 10 deletions(-)
+ 6 files changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
-index 396137ee018d..95a47f7f0743 100644
+index f69f7dcdfa95..af063f01b1c0 100644
 --- a/Documentation/admin-guide/kernel-parameters.txt
 +++ b/Documentation/admin-guide/kernel-parameters.txt
-@@ -4961,7 +4961,7 @@
+@@ -4972,7 +4972,7 @@
  			overwritten.
  
  	rcutree.kthread_prio= 	 [KNL,BOOT]
@@ -57,9 +57,18 @@ index 45d6b4c3d199..6ec406e1bd5c 100644
  
  	/* Don't allow time recalculation while creating a new task. */
 diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index d9642dd06c25..94ef60b58efa 100644
+index d9642dd06c25..2cc2bf04b5d3 100644
 --- a/kernel/rcu/tree.c
 +++ b/kernel/rcu/tree.c
+@@ -4424,7 +4424,7 @@ static void rcu_spawn_exp_par_gp_kworker(struct rcu_node *rnp)
+ 	WRITE_ONCE(rnp->exp_kworker, kworker);
+ 
+ 	if (IS_ENABLED(CONFIG_RCU_EXP_KTHREAD))
+-		sched_setscheduler_nocheck(kworker->task, SCHED_FIFO, &param);
++		sched_setscheduler_nocheck(kworker->task, SCHED_RR, &param);
+ }
+ 
+ static struct task_struct *rcu_exp_par_gp_task(struct rcu_node *rnp)
 @@ -4450,7 +4450,7 @@ static void __init rcu_start_exp_gp_kworker(void)
  	}
  
